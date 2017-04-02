@@ -77,8 +77,6 @@
 
     self.window.rootViewController = self.applicationUI.rootViewController;
 
-    [[OBAApplication sharedApplication].regionHelper updateRegion];
-
     [self.window makeKeyAndVisible];
 }
 
@@ -115,6 +113,8 @@
     [tracker set:[GAIFields customDimensionForIndex:1] value:[OBAApplication sharedApplication].modelDao.currentRegion.regionName];
 
     [OBAAnalytics configureVoiceOverStatus];
+
+    [[OBAApplication sharedApplication].regionHelper updateRegionData];
 
     [self _constructUI];
 
@@ -169,7 +169,7 @@
 
 - (void)invalidRegionNotification:(NSNotification*)note {
     [OBAApplication sharedApplication].modelDao.automaticallySelectRegion = YES;
-    [[OBAApplication sharedApplication].regionHelper updateRegion];
+    [[OBAApplication sharedApplication].regionHelper updateRegionData];
     [[GAI sharedInstance].defaultTracker set:[GAIFields customDimensionForIndex:2] value:OBAStringFromBool(YES)];
 }
 

@@ -26,10 +26,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,weak) id<OBARegionHelperDelegate> delegate;
 @property(nonatomic,copy,readonly) NSArray<OBARegionV2*> *regionsWithin100Miles;
 
-- (instancetype)initWithLocationManager:(OBALocationManager*)locationManager NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithLocationManager:(OBALocationManager*)locationManager modelService:(OBAModelService*)modelService NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-- (void)updateRegion;
+- (void)start;
+- (void)updateRegionData;
 @end
 
 NS_ASSUME_NONNULL_END

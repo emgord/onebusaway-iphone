@@ -10,68 +10,53 @@
 #import <OBAKit/OBAApplication.h>
 #import <OBAKit/OBAMacros.h>
 #import <OBAKit/OBALogging.h>
+#import <OBAKit/OBARegionStorage.h>
+#import <OBAKit/OBAKit-Swift.h>
 
 @interface OBARegionHelper ()
 @property(nonatomic,copy) NSArray<OBARegionV2*> *regions;
+@property(nonatomic,strong) OBARegionStorage *regionStorage;
 @end
 
 @implementation OBARegionHelper
 
-- (instancetype)initWithLocationManager:(OBALocationManager*)locationManager {
+- (instancetype)initWithLocationManager:(OBALocationManager*)locationManager modelService:(OBAModelService*)modelService {
     self = [super init];
 
     if (self) {
         _locationManager = locationManager;
-        _regions = @[];
-        [self registerForLocationNotifications];
+        _modelService = modelService;
+        _regionStorage = [[OBARegionStorage alloc] initWithModelFactory:modelService.modelFactory];
+        _regions = [_regionStorage regions];
     }
     return self;
 }
 
-- (void)updateRegion {
+- (void)start {
+    [self registerForLocationNotifications];
+    [self updateRegionData];
+}
+
+- (void)updateRegionData {
     [self.modelService requestRegions:^(id responseData, NSUInteger responseCode, NSError *error) {
-        if (error && !responseData) {
-            responseData = [self loadDefaultRegions];
+        if (error) {
+            DDLogError(@"Error occurred while updating regions: %@", error);
+            return;
         }
-        [self processRegionData:responseData];
+
+        self.regionStorage.regions = [responseData values];
+        self.regions = [OBARegionHelper filterAcceptableRegions:[responseData values]];
+        if (self.modelDAO.automaticallySelectRegion && self.locationManager.locationServicesEnabled) {
+            [self setNearestRegion];
+        }
+        else {
+            [self refreshCurrentRegionData];
+        }
      }];
 }
 
-- (OBAListWithRangeAndReferencesV2*)loadDefaultRegions {
-    OBAModelFactory *factory = self.modelService.modelFactory;
-    NSError *error = nil;
-
-    NSData *data = [[NSData alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"regions-v3" ofType:@"json"]];
-
-    OBAGuard(data.length > 0) else {
-        DDLogError(@"Unable to load regions from app bundle.");
-        return nil;
-    }
-
-    id defaultJSONData = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:&error];
-
-    if (!defaultJSONData) {
-        DDLogError(@"Unable to convert bundled regions into an object. %@", error);
-        return nil;
-    }
-
-    OBAListWithRangeAndReferencesV2 *references = [factory getRegionsV2FromJson:defaultJSONData error:&error];
-
-    if (error) {
-        DDLogError(@"Issue parsing bundled JSON data: %@", error);
-    }
-
-    return references;
-}
-
-- (void)processRegionData:(OBAListWithRangeAndReferencesV2*)regionData {
-    OBAGuard(regionData) else {
-        return;
-    }
-
-    NSArray<OBARegionV2*> *regions = regionData.values;
-
-    self.regions = [regions filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *region, NSDictionary<NSString *,id> * _Nullable bindings) {
++ (NSArray<OBARegionV2*>*)filterAcceptableRegions:(NSArray<OBARegionV2*>*)regions {
+    return [regions filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *region, NSDictionary<NSString *,id> * _Nullable bindings) {
         if (!region.active) {
             return NO;
         }
@@ -82,13 +67,6 @@
 
         return YES;
     }]];
-
-    if (self.modelDAO.automaticallySelectRegion && self.locationManager.locationServicesEnabled) {
-        [self setNearestRegion];
-    }
-    else {
-        [self refreshCurrentRegionData];
-    }
 }
 
 - (void)setNearestRegion {
@@ -164,13 +142,6 @@
         _modelDAO = [OBAApplication sharedApplication].modelDao;
     }
     return _modelDAO;
-}
-
-- (OBAModelService*)modelService {
-    if (!_modelService) {
-        _modelService = [OBAApplication sharedApplication].modelService;
-    }
-    return _modelService;
 }
 
 #pragma mark - OBALocationManager Notifications

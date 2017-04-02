@@ -160,7 +160,7 @@ class RegionListViewController: OBAStaticTableViewController, RegionBuilderDeleg
             self.modelDAO.automaticallySelectRegion = !self.modelDAO.automaticallySelectRegion
 
             if (self.modelDAO.automaticallySelectRegion) {
-                OBAApplication.shared().regionHelper.updateRegion()
+                OBAApplication.shared().regionHelper.updateRegionData()
                 SVProgressHUD.show()
             }
             else {

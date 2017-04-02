@@ -73,7 +73,7 @@ NSString *const OBARegionServerInvalidNotification = @"OBARegionServerInvalidNot
 
     self.modelService.locationManager = self.locationManager;
 
-    self.regionHelper = [[OBARegionHelper alloc] initWithLocationManager:self.locationManager];
+    self.regionHelper = [[OBARegionHelper alloc] initWithLocationManager:self.locationManager modelService:self.modelService];
 
     self.privacyBroker = [[PrivacyBroker alloc] initWithModelDAO:self.modelDao locationManager:self.locationManager];
 
