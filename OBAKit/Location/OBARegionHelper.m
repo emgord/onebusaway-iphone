@@ -34,10 +34,10 @@
 
 - (void)start {
     [self registerForLocationNotifications];
-    [self updateRegionData];
+    [self refreshData];
 }
 
-- (void)updateRegionData {
+- (void)refreshData {
     [self.modelService requestRegions:^(id responseData, NSUInteger responseCode, NSError *error) {
         if (error) {
             DDLogError(@"Error occurred while updating regions: %@", error);
@@ -53,20 +53,6 @@
             [self refreshCurrentRegionData];
         }
      }];
-}
-
-+ (NSArray<OBARegionV2*>*)filterAcceptableRegions:(NSArray<OBARegionV2*>*)regions {
-    return [regions filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *region, NSDictionary<NSString *,id> * _Nullable bindings) {
-        if (!region.active) {
-            return NO;
-        }
-
-        if (!region.supportsObaRealtimeApis) {
-            return NO;
-        }
-
-        return YES;
-    }]];
 }
 
 - (void)setNearestRegion {
@@ -163,6 +149,22 @@
         self.modelDAO.automaticallySelectRegion = NO;
         [self.delegate regionHelperShowRegionListController:self];
     }
+}
+
+#pragma mark - Data Munging
+
++ (NSArray<OBARegionV2*>*)filterAcceptableRegions:(NSArray<OBARegionV2*>*)regions {
+    return [regions filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *region, NSDictionary<NSString *,id> * _Nullable bindings) {
+        if (!region.active) {
+            return NO;
+        }
+
+        if (!region.supportsObaRealtimeApis) {
+            return NO;
+        }
+
+        return YES;
+    }]];
 }
 
 @end

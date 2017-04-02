@@ -114,7 +114,7 @@
 
     [OBAAnalytics configureVoiceOverStatus];
 
-    [[OBAApplication sharedApplication].regionHelper updateRegionData];
+    [[OBAApplication sharedApplication].regionHelper refreshData];
 
     [self _constructUI];
 
@@ -169,7 +169,7 @@
 
 - (void)invalidRegionNotification:(NSNotification*)note {
     [OBAApplication sharedApplication].modelDao.automaticallySelectRegion = YES;
-    [[OBAApplication sharedApplication].regionHelper updateRegionData];
+    [[OBAApplication sharedApplication].regionHelper refreshData];
     [[GAI sharedInstance].defaultTracker set:[GAIFields customDimensionForIndex:2] value:OBAStringFromBool(YES)];
 }
 
