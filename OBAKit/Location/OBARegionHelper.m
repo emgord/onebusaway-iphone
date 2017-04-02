@@ -12,7 +12,7 @@
 #import <OBAKit/OBALogging.h>
 
 @interface OBARegionHelper ()
-@property(nonatomic,strong) NSMutableArray *regions;
+@property(nonatomic,copy) NSArray<OBARegionV2*> *regions;
 @end
 
 @implementation OBARegionHelper
@@ -22,6 +22,7 @@
 
     if (self) {
         _locationManager = locationManager;
+        _regions = @[];
         [self registerForLocationNotifications];
     }
     return self;
@@ -37,8 +38,6 @@
 }
 
 - (OBAListWithRangeAndReferencesV2*)loadDefaultRegions {
-    DDLogWarn(@"Unable to retrieve regions file. Loading default regions from the app bundle.");
-
     OBAModelFactory *factory = self.modelService.modelFactory;
     NSError *error = nil;
 
@@ -70,7 +69,19 @@
         return;
     }
 
-    self.regions = [[NSMutableArray alloc] initWithArray:regionData.values];
+    NSArray<OBARegionV2*> *regions = regionData.values;
+
+    self.regions = [regions filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *region, NSDictionary<NSString *,id> * _Nullable bindings) {
+        if (!region.active) {
+            return NO;
+        }
+
+        if (!region.supportsObaRealtimeApis) {
+            return NO;
+        }
+
+        return YES;
+    }]];
 
     if (self.modelDAO.automaticallySelectRegion && self.locationManager.locationServicesEnabled) {
         [self setNearestRegion];
@@ -81,11 +92,7 @@
 }
 
 - (void)setNearestRegion {
-    if (self.regions.count == 0) {
-        return;
-    }
-
-    CLLocation *newLocation = self.locationManager.currentLocation;
+    NSArray<OBARegionV2*> *candidateRegions = self.regionsWithin100Miles;
 
     // If the location manager is being lame and is refusing to
     // give us a location, then we need to proactively bail on the
@@ -93,60 +100,11 @@
     // non-clever treatment of nil will result in us unexpectedly
     // selecting Tampa. This happens because Tampa is the closest
     // region to lat long point (0,0).
-    //
-    // Once we're in the block, if we have a region already,
-    // then do nothing and bail. Otherwise, if we don't yet have a
-    // region, show the picker.
-    if (!newLocation) {
-        if (!self.modelDAO.currentRegion) {
-            self.modelDAO.automaticallySelectRegion = NO;
-            [self.delegate regionHelperShowRegionListController:self];
-        }
-        return;
-    }
-
-    NSMutableArray *notSupportedRegions = [NSMutableArray array];
-
-    for (OBARegionV2 *region in self.regions) {
-        if (!region.supportsObaRealtimeApis || !region.active) {
-            [notSupportedRegions addObject:region];
-        }
-    }
-
-    [self.regions removeObjectsInArray:notSupportedRegions];
-
-    NSMutableArray *regionsToRemove = [NSMutableArray array];
-
-    for (OBARegionV2 *region in self.regions) {
-        CLLocationDistance distance = [region distanceFromLocation:newLocation];
-
-        if (distance > 160934) { // 100 miles
-            [regionsToRemove addObject:region];
-        }
-    }
-
-    [self.regions removeObjectsInArray:regionsToRemove];
-
-    if (self.regions.count == 0) {
+    if (candidateRegions.count == 0) {
         self.modelDAO.automaticallySelectRegion = NO;
         [self.delegate regionHelperShowRegionListController:self];
         return;
     }
-
-    [self.regions sortUsingComparator:^(OBARegionV2 *region1, OBARegionV2 *region2) {
-        CLLocationDistance distance1 = [region1 distanceFromLocation:newLocation];
-        CLLocationDistance distance2 = [region2 distanceFromLocation:newLocation];
-
-        if (distance1 > distance2) {
-            return NSOrderedDescending;
-        }
-        else if (distance1 < distance2) {
-            return NSOrderedAscending;
-        }
-        else {
-            return NSOrderedSame;
-        }
-     }];
 
     self.modelDAO.currentRegion = self.regions[0];
     self.modelDAO.automaticallySelectRegion = YES;
@@ -166,6 +124,37 @@
             break;
         }
     }
+}
+
+#pragma mark - Public Properties
+
+- (NSArray<OBARegionV2*>*)regionsWithin100Miles {
+    if (self.regions.count == 0) {
+        return @[];
+    }
+
+    CLLocation *currentLocation = self.locationManager.currentLocation;
+
+    if (!currentLocation) {
+        return @[];
+    }
+
+    return [[self.regions sortedArrayUsingComparator:^NSComparisonResult(OBARegionV2 *r1, OBARegionV2 *r2) {
+        CLLocationDistance distance1 = [r1 distanceFromLocation:currentLocation];
+        CLLocationDistance distance2 = [r2 distanceFromLocation:currentLocation];
+
+        if (distance1 > distance2) {
+            return NSOrderedDescending;
+        }
+        else if (distance1 < distance2) {
+            return NSOrderedAscending;
+        }
+        else {
+            return NSOrderedSame;
+        }
+    }] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(OBARegionV2 *r, NSDictionary<NSString *,id> *bindings) {
+        return ([r distanceFromLocation:currentLocation] < 160934); // == 100 miles
+    }]];
 }
 
 #pragma mark - Lazy Loaders
