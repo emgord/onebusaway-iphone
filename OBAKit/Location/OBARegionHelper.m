@@ -27,10 +27,6 @@
     return self;
 }
 
-- (void)updateNearestRegion {
-    [self updateRegion];
-}
-
 - (void)updateRegion {
     [self.modelService requestRegions:^(id responseData, NSUInteger responseCode, NSError *error) {
         if (error && !responseData) {

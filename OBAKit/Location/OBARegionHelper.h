@@ -28,7 +28,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithLocationManager:(OBALocationManager*)locationManager NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-- (void)updateNearestRegion;
 - (void)updateRegion;
 @end
 

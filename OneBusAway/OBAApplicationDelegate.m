@@ -77,12 +77,7 @@
 
     self.window.rootViewController = self.applicationUI.rootViewController;
 
-    if ([OBAApplication sharedApplication].modelDao.automaticallySelectRegion && [OBAApplication sharedApplication].locationManager.locationServicesEnabled) {
-        [[OBAApplication sharedApplication].regionHelper updateNearestRegion];
-    }
-    else {
-        [[OBAApplication sharedApplication].regionHelper updateRegion];
-    }
+    [[OBAApplication sharedApplication].regionHelper updateRegion];
 
     [self.window makeKeyAndVisible];
 }
@@ -165,16 +160,16 @@
 #pragma mark - Notifications
 
 - (void)registerForNotifications {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(regionRefreshed:) name:kOBAApplicationSettingsRegionRefreshNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(invalidRegionNotification:) name:OBARegionServerInvalidNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recentStopsChanged:) name:OBAMostRecentStopsChangedNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(highPriorityRegionalAlertReceived:) name:RegionalAlertsManager.highPriorityRegionalAlertReceivedNotification object:nil];
 }
 
-- (void)regionRefreshed:(NSNotification*)note {
+- (void)invalidRegionNotification:(NSNotification*)note {
     [OBAApplication sharedApplication].modelDao.automaticallySelectRegion = YES;
-    [[OBAApplication sharedApplication].regionHelper updateNearestRegion];
+    [[OBAApplication sharedApplication].regionHelper updateRegion];
     [[GAI sharedInstance].defaultTracker set:[GAIFields customDimensionForIndex:2] value:OBAStringFromBool(YES)];
 }
 
