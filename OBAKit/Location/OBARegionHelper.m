@@ -76,7 +76,7 @@
         [self setNearestRegion];
     }
     else {
-        [self setRegion];
+        [self refreshCurrentRegionData];
     }
 }
 
@@ -152,17 +152,16 @@
     self.modelDAO.automaticallySelectRegion = YES;
 }
 
-- (void)setRegion {
-    NSString *regionName = self.modelDAO.currentRegion.regionName;
+- (void)refreshCurrentRegionData {
+    OBARegionV2 *currentRegion = self.modelDAO.currentRegion;
 
-    if (!regionName && self.locationManager.hasRequestedInUseAuthorization) {
+    if (!currentRegion && self.locationManager.hasRequestedInUseAuthorization) {
         [self.delegate regionHelperShowRegionListController:self];
         return;
     }
 
-    // TODO: instead of comparing name, the regions' identifiers should be used instead.
     for (OBARegionV2 *region in self.regions) {
-        if ([region.regionName isEqual:regionName]) {
+        if (currentRegion.identifier == region.identifier) {
             self.modelDAO.currentRegion = region;
             break;
         }
