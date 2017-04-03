@@ -365,6 +365,8 @@ static NSString * const OBALastRegionRefreshDateUserDefaultsKey = @"OBALastRegio
     self.window.rootViewController = _regionNavigationController;
 }
 
+// abxoxo: I think the region overhaul is finished. At this point it just needs testing.
+
 - (void)regionHelperDidRefreshRegions:(OBARegionHelper*)regionHelper {
     [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:OBALastRegionRefreshDateUserDefaultsKey];
 }
