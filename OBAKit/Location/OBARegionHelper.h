@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class OBARegionHelper;
 @protocol OBARegionHelperDelegate <NSObject>
 - (void)regionHelperShowRegionListController:(OBARegionHelper*)regionHelper;
+- (void)regionHelperDidRefreshRegions:(OBARegionHelper*)regionHelper;
 @end
 
 @interface OBARegionHelper : NSObject
@@ -29,7 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithLocationManager:(OBALocationManager*)locationManager modelService:(OBAModelService*)modelService NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-- (void)start;
 - (void)refreshData;
 @end
 

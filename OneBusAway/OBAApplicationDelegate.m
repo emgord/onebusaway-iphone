@@ -35,6 +35,8 @@
 #import "OBAClassicApplicationUI.h"
 #import "EXTScope.h"
 
+static NSString * const OBALastRegionRefreshDateUserDefaultsKey = @"OBALastRegionRefreshDateUserDefaultsKey";
+
 @interface OBAApplicationDelegate () <OBABackgroundTaskExecutor, OBARegionHelperDelegate, RegionListDelegate, OBAPushManagerDelegate>
 @property(nonatomic,strong) UINavigationController *regionNavigationController;
 @property(nonatomic,strong) RegionListViewController *regionListViewController;
@@ -114,11 +116,24 @@
 
     [OBAAnalytics configureVoiceOverStatus];
 
-    [[OBAApplication sharedApplication].regionHelper refreshData];
+    if ([self hasEnoughTimeElapsedToRefreshRegions]) {
+        [[OBAApplication sharedApplication].regionHelper refreshData];
+    }
 
     [self _constructUI];
 
     return YES;
+}
+
+- (BOOL)hasEnoughTimeElapsedToRefreshRegions {
+    NSDate *lastRefresh = [[NSUserDefaults standardUserDefaults] objectForKey:OBALastRegionRefreshDateUserDefaultsKey];
+
+    if (!lastRefresh) {
+        return YES;
+    }
+
+    // 604,800 seconds in a week. Only refresh once a week.
+    return [lastRefresh timeIntervalSinceNow] > -604800;
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application {
@@ -348,6 +363,10 @@
     _regionNavigationController = [[UINavigationController alloc] initWithRootViewController:_regionListViewController];
 
     self.window.rootViewController = _regionNavigationController;
+}
+
+- (void)regionHelperDidRefreshRegions:(OBARegionHelper*)regionHelper {
+    [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:OBALastRegionRefreshDateUserDefaultsKey];
 }
 
 #pragma mark - Fabric

@@ -28,13 +28,9 @@
         _modelService = modelService;
         _regionStorage = [[OBARegionStorage alloc] initWithModelFactory:modelService.modelFactory];
         _regions = [_regionStorage regions];
+        [self registerForLocationNotifications];
     }
     return self;
-}
-
-- (void)start {
-    [self registerForLocationNotifications];
-    [self refreshData];
 }
 
 - (void)refreshData {
@@ -52,6 +48,8 @@
         else {
             [self refreshCurrentRegionData];
         }
+
+        [self.delegate regionHelperDidRefreshRegions:self];
      }];
 }
 
